@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 // Define types
 interface ProfileData {
@@ -44,17 +45,25 @@ interface ProfileData {
   created_at: string;
 }
 
+interface FollowerProfile {
+  full_name: string;
+  display_name: string;
+  avatar_url: string;
+}
+
 interface FollowerData {
   id: string;
   follower_id: string;
   following_id: string;
   status: string;
   created_at: string;
-  follower_profile: {
-    full_name: string;
-    display_name: string;
-    avatar_url: string;
-  };
+  follower_profile?: FollowerProfile | FollowerProfile[];
+}
+
+interface FollowingProfile {
+  full_name: string;
+  display_name: string;
+  avatar_url: string;
 }
 
 interface FollowingData {
@@ -63,11 +72,7 @@ interface FollowingData {
   following_id: string;
   status: string;
   created_at: string;
-  following_profile: {
-    full_name: string;
-    display_name: string;
-    avatar_url: string;
-  };
+  following_profile?: FollowingProfile | FollowingProfile[];
 }
 
 const Profile = () => {
@@ -206,7 +211,14 @@ const Profile = () => {
             .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
           
           if (!error) {
-            setFollowers(data);
+            // Fix the type issue by ensuring follower_profile is properly structured
+            const followersData: FollowerData[] = (data || []).map((follower: any) => ({
+              ...follower,
+              follower_profile: follower.follower_profile && Array.isArray(follower.follower_profile) 
+                ? follower.follower_profile[0] 
+                : follower.follower_profile
+            }));
+            setFollowers(followersData);
           }
         } else {
           const { data, error } = await supabase
@@ -228,7 +240,14 @@ const Profile = () => {
             .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
           
           if (!error) {
-            setFollowing(data);
+            // Fix the type issue by ensuring following_profile is properly structured
+            const followingData: FollowingData[] = (data || []).map((following: any) => ({
+              ...following,
+              following_profile: following.following_profile && Array.isArray(following.following_profile) 
+                ? following.following_profile[0] 
+                : following.following_profile
+            }));
+            setFollowing(followingData);
           }
         }
       } catch (error) {
@@ -337,15 +356,21 @@ const Profile = () => {
     }
   };
 
-  const filteredFollowers = followers.filter(follower => 
-    follower.follower_profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    follower.follower_profile?.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFollowers = followers.filter(follower => {
+    const profile = Array.isArray(follower.follower_profile) 
+      ? follower.follower_profile[0] 
+      : follower.follower_profile;
+    return profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           profile?.display_name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
-  const filteredFollowing = following.filter(following => 
-    following.following_profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    following.following_profile?.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFollowing = following.filter(following => {
+    const profile = Array.isArray(following.following_profile) 
+      ? following.following_profile[0] 
+      : following.following_profile;
+    return profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           profile?.display_name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   if (loading) {
     return (
@@ -537,6 +562,12 @@ const Profile = () => {
                         </a>
                       </div>
                     )}
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Joined {formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
@@ -587,7 +618,10 @@ const Profile = () => {
           {/* List */}
           <div className="space-y-4">
             {(activeTab === "followers" ? filteredFollowers : filteredFollowing).map((item) => {
-              const user = activeTab === "followers" ? item.follower_profile : item.following_profile;
+              const user = activeTab === "followers" 
+                ? (Array.isArray(item.follower_profile) ? item.follower_profile[0] : item.follower_profile)
+                : (Array.isArray(item.following_profile) ? item.following_profile[0] : item.following_profile);
+              
               return (
                 <div key={item.id} className="flex items-center justify-between p-3 hover:bg-accent rounded-lg">
                   <div className="flex items-center gap-3">

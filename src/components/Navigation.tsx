@@ -40,6 +40,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import AnimatedSearch from "./AnimatedSearch";
 import CoursesModal from "./CoursesModal";
+import NotificationsDropdown from "./NotificationsDropdown";
 
 const Navigation = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -210,19 +211,7 @@ const Navigation = () => {
             </motion.button>
 
             {/* Notification Bell */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative p-3 hover:bg-primary/10 rounded-full transition-all duration-300 group"
-            >
-              <Bell className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
-              {notificationCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-              )}
-            </motion.button>
+            <NotificationsDropdown />
 
             {/* User Menu or Sign Up Button */}
             {currentUser ? (
